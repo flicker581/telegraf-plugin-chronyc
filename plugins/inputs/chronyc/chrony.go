@@ -511,43 +511,46 @@ func parseServerStats(fields []string) (map[string]interface{}, map[string]strin
 
 	var err error
 	n := len(fields)
-	if n != 5 {
-		return nil, nil, fieldCountError{fmt.Errorf("Got %d instead of 5 fields in serverstats line", n)}
+	if n < 5 {
+		return nil, nil, fieldCountError{fmt.Errorf("Got %d less than 5 fields in serverstats line", n)}
 	}
-	var ntpPacketsReceived, ntpPacketsDropped, commandPacketsReceived, commandPacketsDropped, clientLogRecordsDropped int64
+
+	tFields := map[string]interface{}{}
 
 	for i, field := range fields {
 		switch i {
 		case 0:
-			ntpPacketsReceived, err = strconv.ParseInt(field, 10, 64)
+			tFields["ntpPacketsReceived"], err = strconv.ParseInt(field, 10, 32)
 		case 1:
-			ntpPacketsDropped, err = strconv.ParseInt(field, 10, 64)
+			tFields["ntpPacketsDropped"], err = strconv.ParseInt(field, 10, 32)
 		case 2:
-			commandPacketsReceived, err = strconv.ParseInt(field, 10, 64)
+			tFields["commandPacketsReceived"], err = strconv.ParseInt(field, 10, 32)
 		case 3:
-			commandPacketsDropped, err = strconv.ParseInt(field, 10, 64)
+			tFields["commandPacketsDropped"], err = strconv.ParseInt(field, 10, 32)
 		case 4:
-			clientLogRecordsDropped, err = strconv.ParseInt(field, 10, 64)
+			tFields["clientLogRecordsDropped"], err = strconv.ParseInt(field, 10, 32)
+		case 5:
+			tFields["NTSKEConnectionsAccepted"], err = strconv.ParseInt(field, 10, 32)
+		case 6:
+			tFields["NTSKEConnectionsDropped"], err = strconv.ParseInt(field, 10, 32)
+		case 7:
+			tFields["authenticatedNTPPackets"], err = strconv.ParseInt(field, 10, 32)
+		case 8:
+			tFields["interleavedNTPPackets"], err = strconv.ParseInt(field, 10, 32)
+		case 9:
+			tFields["NTPTimestampsHeld"], err = strconv.ParseInt(field, 10, 32)
+		case 10:
+			tFields["NTPTimestampSpan"], err = strconv.ParseInt(field, 10, 32)
 		}
 		if err != nil {
 			return nil, nil, formatError{err}
 		}
-	}
-
-	tFields := map[string]interface{}{
-		"ntpPacketsReceived":      ntpPacketsReceived,
-		"ntpPacketsDropped":       ntpPacketsDropped,
-		"commandPacketsReceived":  commandPacketsReceived,
-		"commandPacketsDropped":   commandPacketsDropped,
-		"clientLogRecordsDropped": clientLogRecordsDropped,
 	}
 	tTags := map[string]string{
 		"command": "serverstats",
 		"clockId": "chrony",
 	}
 
-	//	fmt.Printf("ServerStats ntpPacketsReceived: %d, ntpPacketsDropped: %d, commandPacketsReceived: %d, commandPacketsDropped: %d, clientLogRecordsDropped: %d\n",
-	//		ntpPacketsReceived, ntpPacketsDropped, commandPacketsReceived, commandPacketsDropped, clientLogRecordsDropped)
 	return tFields, tTags, nil
 }
 
@@ -818,7 +821,7 @@ func (c *Chrony) parseChronycOutput(commandList []string, out string, acc telegr
 	}
 	command := map[string]*commandRef{
 		"tracking":    {true, 14, parseTracking, nil},
-		"serverstats": {true, 5, parseServerStats, nil},
+		"serverstats": {true, -1, parseServerStats, nil},
 		"sources":     {false, 10, parseSources, nil},
 		"sourcestats": {false, 8, parseSourceStats, nil},
 		"ntpdata":     {false, 33, parseNtpData, nil},
@@ -865,7 +868,7 @@ func (c *Chrony) parseChronycOutput(commandList []string, out string, acc telegr
 			err = nil
 			// When got wrong number of fields in output,
 			// this may mean that it is time to switch to next command.
-			if len(fields) != cmd.fields {
+			if cmd.fields > 0 && len(fields) != cmd.fields {
 				if cmd.singleLine {
 					return fmt.Errorf("Wrong field count for mandatory command '%s': %d, must be %d",
 						commandName, len(fields), cmd.fields)
