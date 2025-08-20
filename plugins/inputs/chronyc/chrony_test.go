@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"context"
 
 	"github.com/flicker581/telegraf-plugin-chronyc/plugins/inputs/chronyc"
 	"github.com/influxdata/telegraf/testutil"
@@ -15,10 +16,11 @@ func TestGather(t *testing.T) {
 	c := chronyc.Chrony{
 		ChronycPath:     "chronyc",
 		ChronycCommands: []string{"tracking", "serverstats", "sources"},
+		Timeout: 5,
 	}
 	// overwriting exec commands with mock commands
 	chronyc.ExecCommand = makeExecCommand("TestHelperProcess")
-	defer func() { chronyc.ExecCommand = exec.Command }()
+	defer func() { chronyc.ExecCommand = exec.CommandContext }()
 	var acc testutil.Accumulator
 
 	err := c.Gather(&acc)
@@ -69,11 +71,12 @@ func _TestGatherEmptySources(t *testing.T) {
 	c := chronyc.Chrony{
 		ChronycPath:     "chronyc",
 		ChronycCommands: []string{"tracking", "sources", "serverstats"},
+		Timeout: 5,
 	}
 
 	// overwriting exec commands with mock commands
 	chronyc.ExecCommand = makeExecCommand("TestHelperProcess")
-	defer func() { chronyc.ExecCommand = exec.Command }()
+	defer func() { chronyc.ExecCommand = exec.CommandContext }()
 	var acc testutil.Accumulator
 
 	err := c.Gather(&acc)
@@ -87,13 +90,13 @@ func _TestGatherEmptySources(t *testing.T) {
 
 }
 
-func makeExecCommand(helper string) func(string, ...string) *exec.Cmd {
+func makeExecCommand(helper string) func(context.Context, string, ...string) *exec.Cmd {
 	// fakeExecCommand is a helper function that mock
-	// the exec.Command call (and call the test binary)
-	return func(command string, args ...string) *exec.Cmd {
+	// the exec.CommandContext call (and call the test binary)
+	return func(ctx context.Context, command string, args ...string) *exec.Cmd {
 		cs := []string{"-test.run=" + helper, "--", command}
 		cs = append(cs, args...)
-		cmd := exec.Command(os.Args[0], cs...)
+		cmd := exec.CommandContext(ctx, os.Args[0], cs...)
 		cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 		return cmd
 	}

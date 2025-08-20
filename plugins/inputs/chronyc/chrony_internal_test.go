@@ -2,7 +2,7 @@ package chronyc
 
 import (
 	// "fmt"
-	//	"os"
+	// "os"
 	"github.com/influxdata/telegraf/testutil"
 	"reflect"
 	"strings"
@@ -58,7 +58,7 @@ func TestParseSources(t *testing.T) {
 	var acc testutil.Accumulator
 	c := Chrony{}
 
-	err := c.parseChronycOutput(commandList, out, &acc)
+	err := c.parseMulti(commandList, out, &acc)
 
 	if err != nil {
 		t.Fatalf("An error has been returned: %v", err)
@@ -138,13 +138,16 @@ func TestParseNoSources(t *testing.T) {
 	commandList := []string{"tracking", "sources", "serverstats"}
 	out :=
 		`50505300,PPS,1,1542141310.995435528,0.000000132,0.000000013,0.000000059,-17.935,0.000,0.001,0.000001000,0.000019609,16.0,Normal
+.
+.
 13,0,464070,0,0
+.
 `
 
 	var acc testutil.Accumulator
 	c := Chrony{}
 
-	err := c.parseChronycOutput(commandList, out, &acc)
+	err := c.parseMulti(commandList, out, &acc)
 
 	if err != nil {
 		t.Fatalf("An error has been returned: %v", err)
@@ -160,13 +163,15 @@ func TestDoubleTracking(t *testing.T) {
 	commandList := []string{"tracking", "tracking"}
 	out :=
 		`50505300,PPS,1,1542141310.995435528,0.000000132,0.000000013,0.000000059,-17.935,0.000,0.001,0.000001000,0.000019609,16.0,Normal
+.
 50505300,PPS,1,1542141310.995435528,0.000000132,0.000000013,0.000000059,-17.935,0.000,0.001,0.000001000,0.000019609,16.0,Normal
+.
 `
 
 	var acc testutil.Accumulator
 	c := Chrony{}
 
-	err := c.parseChronycOutput(commandList, out, &acc)
+	err := c.parseMulti(commandList, out, &acc)
 
 	if err != nil {
 		t.Fatalf("An error has been returned: %v", err)
@@ -190,7 +195,7 @@ func TestParseClients(t *testing.T) {
 	var acc testutil.Accumulator
 	c := Chrony{}
 
-	err := c.parseChronycOutput(commandList, out, &acc)
+	err := c.parseMulti(commandList, out, &acc)
 
 	if err != nil {
 		t.Fatalf("An error has been returned: %v", err)
@@ -231,7 +236,7 @@ func TestParseClientsSummary(t *testing.T) {
 		ClientsSummary: true,
 	}
 
-	err := c.parseChronycOutput(commandList, out, &acc)
+	err := c.parseMulti(commandList, out, &acc)
 
 	if err != nil {
 		t.Fatalf("An error has been returned: %v", err)
