@@ -345,8 +345,8 @@ func parseNtpData(fields []string) (map[string]interface{}, map[string]string, e
 	var totalGoodRX, totalKernelTX, totalKernelRX, totalHWTX, totalHWRX int64
 
 	n := len(fields)
-	if n != 33 && n != 38 {
-		return nil, nil, fieldCountError{fmt.Errorf("Got %d instead of 33 or 38 fields in ntpdata line", n)}
+	if n < 33 {
+		return nil, nil, fieldCountError{fmt.Errorf("Got %d fields (less than 33) in ntpdata line", n)}
 	}
 
 	for i, field := range fields {
